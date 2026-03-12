@@ -1,0 +1,703 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Dashboard de Ventas 2024</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Mono:wght@300;400;500&family=Outfit:wght@300;400;500;600&display=swap" rel="stylesheet"/>
+<style>
+  /* ── Variables ── */
+  :root {
+    --ink:      #0d0d12;
+    --paper:    #f5f3ee;
+    --accent:   #e84535;
+    --gold:     #c9a84c;
+    --muted:    #8a8880;
+    --card:     #ffffff;
+    --border:   #e0ddd6;
+    --blue:     #1a3a5c;
+    --teal:     #2a7a6f;
+    --orange:   #e07b39;
+    --lavender: #7a5c8a;
+  }
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: 'Outfit', sans-serif;
+    background: var(--paper);
+    color: var(--ink);
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  /* ── Noise texture overlay ── */
+  body::before {
+    content: '';
+    position: fixed; inset: 0;
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.04'/%3E%3C/svg%3E");
+    pointer-events: none; z-index: 0;
+  }
+
+  /* ── Header ── */
+  header {
+    position: relative;
+    background: var(--ink);
+    padding: 3rem 4rem 2.5rem;
+    overflow: hidden;
+  }
+
+  header::after {
+    content: '2024';
+    position: absolute;
+    right: -1rem; top: -1.5rem;
+    font-family: 'DM Serif Display', serif;
+    font-size: clamp(6rem, 15vw, 14rem);
+    color: rgba(255,255,255,0.04);
+    line-height: 1;
+    pointer-events: none;
+    user-select: none;
+  }
+
+  .header-eyebrow {
+    font-family: 'DM Mono', monospace;
+    font-size: 0.7rem;
+    letter-spacing: 0.2em;
+    color: var(--accent);
+    text-transform: uppercase;
+    margin-bottom: 0.75rem;
+    animation: fadeUp 0.6s ease both;
+  }
+
+  header h1 {
+    font-family: 'DM Serif Display', serif;
+    font-size: clamp(2rem, 5vw, 3.5rem);
+    color: #fff;
+    line-height: 1.1;
+    animation: fadeUp 0.6s 0.1s ease both;
+  }
+
+  header h1 em {
+    font-style: italic;
+    color: var(--gold);
+  }
+
+  .header-meta {
+    display: flex; gap: 2rem; margin-top: 1.5rem;
+    flex-wrap: wrap;
+    animation: fadeUp 0.6s 0.2s ease both;
+  }
+
+  .header-meta span {
+    font-family: 'DM Mono', monospace;
+    font-size: 0.72rem;
+    color: rgba(255,255,255,0.45);
+    letter-spacing: 0.08em;
+  }
+
+  .header-meta span b { color: rgba(255,255,255,0.85); }
+
+  /* ── Stats bar ── */
+  .stats-bar {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    border-bottom: 1px solid var(--border);
+    animation: fadeUp 0.6s 0.3s ease both;
+  }
+
+  .stat-card {
+    padding: 2rem 2.5rem;
+    border-right: 1px solid var(--border);
+    position: relative;
+    background: var(--card);
+    transition: background 0.2s;
+  }
+  .stat-card:last-child { border-right: none; }
+  .stat-card:hover { background: #fafaf7; }
+
+  .stat-label {
+    font-family: 'DM Mono', monospace;
+    font-size: 0.65rem;
+    letter-spacing: 0.18em;
+    color: var(--muted);
+    text-transform: uppercase;
+    margin-bottom: 0.5rem;
+  }
+
+  .stat-value {
+    font-family: 'DM Serif Display', serif;
+    font-size: clamp(1.8rem, 3.5vw, 2.8rem);
+    line-height: 1;
+    color: var(--ink);
+  }
+
+  .stat-value .currency {
+    font-size: 0.5em;
+    color: var(--muted);
+    vertical-align: super;
+    margin-right: 2px;
+  }
+
+  .stat-badge {
+    display: inline-block;
+    margin-top: 0.5rem;
+    font-size: 0.7rem;
+    font-family: 'DM Mono', monospace;
+    padding: 0.2rem 0.6rem;
+    border-radius: 2px;
+  }
+
+  .badge-avg  { background: #e8f4f0; color: var(--teal); }
+  .badge-sum  { background: #fdf0e8; color: var(--orange); }
+  .badge-max  { background: #fdeaea; color: var(--accent); }
+
+  /* ── Main grid ── */
+  main {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    grid-template-rows: auto auto auto;
+    gap: 1px;
+    background: var(--border);
+    border-top: 1px solid var(--border);
+  }
+
+  .panel {
+    background: var(--card);
+    padding: 2rem 2.5rem;
+    animation: fadeUp 0.6s ease both;
+  }
+
+  .panel-full { grid-column: 1 / -1; }
+
+  .panel-title {
+    font-family: 'DM Mono', monospace;
+    font-size: 0.65rem;
+    letter-spacing: 0.18em;
+    color: var(--muted);
+    text-transform: uppercase;
+    margin-bottom: 1.5rem;
+    display: flex; align-items: center; gap: 0.75rem;
+  }
+
+  .panel-title::after {
+    content: '';
+    flex: 1;
+    height: 1px;
+    background: var(--border);
+  }
+
+  /* ── Table ── */
+  .data-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.875rem;
+  }
+
+  .data-table th {
+    font-family: 'DM Mono', monospace;
+    font-size: 0.6rem;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--muted);
+    padding: 0.5rem 0.75rem;
+    text-align: left;
+    border-bottom: 2px solid var(--border);
+  }
+
+  .data-table td {
+    padding: 0.65rem 0.75rem;
+    border-bottom: 1px solid var(--border);
+    color: var(--ink);
+    vertical-align: middle;
+    transition: background 0.15s;
+  }
+
+  .data-table tr:hover td { background: #f7f5f0; }
+  .data-table tr:last-child td { border-bottom: none; }
+
+  .data-table td.num {
+    font-family: 'DM Mono', monospace;
+    text-align: right;
+  }
+
+  .data-table td.highlight {
+    font-family: 'DM Mono', monospace;
+    font-weight: 500;
+    text-align: right;
+    color: var(--ink);
+  }
+
+  .pill {
+    display: inline-block;
+    padding: 0.15rem 0.5rem;
+    border-radius: 2px;
+    font-family: 'DM Mono', monospace;
+    font-size: 0.7rem;
+  }
+
+  .pill-over  { background: #e8f4f0; color: var(--teal); }
+  .pill-under { background: #f5f3ee; color: var(--muted); }
+
+  /* ── Bar chart ── */
+  .chart-wrap {
+    display: flex;
+    flex-direction: column;
+    gap: 0.9rem;
+  }
+
+  .bar-row {
+    display: grid;
+    grid-template-columns: 7rem 1fr 5rem;
+    align-items: center;
+    gap: 1rem;
+  }
+
+  .bar-label {
+    font-size: 0.82rem;
+    font-weight: 500;
+    color: var(--ink);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .bar-track {
+    height: 10px;
+    background: var(--border);
+    border-radius: 2px;
+    overflow: hidden;
+    position: relative;
+  }
+
+  .bar-fill {
+    height: 100%;
+    border-radius: 2px;
+    width: 0;
+    transition: width 1.2s cubic-bezier(0.16,1,0.3,1);
+  }
+
+  .bar-value {
+    font-family: 'DM Mono', monospace;
+    font-size: 0.75rem;
+    color: var(--muted);
+    text-align: right;
+  }
+
+  /* ── Pivot table ── */
+  .pivot-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.8rem;
+    overflow-x: auto;
+    display: block;
+  }
+
+  .pivot-table th {
+    font-family: 'DM Mono', monospace;
+    font-size: 0.6rem;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--muted);
+    padding: 0.5rem 1rem;
+    text-align: right;
+    border-bottom: 2px solid var(--border);
+    white-space: nowrap;
+  }
+
+  .pivot-table th:first-child { text-align: left; }
+
+  .pivot-table td {
+    padding: 0.6rem 1rem;
+    border-bottom: 1px solid var(--border);
+    font-family: 'DM Mono', monospace;
+    text-align: right;
+    color: var(--muted);
+    white-space: nowrap;
+  }
+
+  .pivot-table td:first-child {
+    text-align: left;
+    font-family: 'Outfit', sans-serif;
+    font-weight: 500;
+    color: var(--ink);
+  }
+
+  .pivot-table td.total-col {
+    font-weight: 600;
+    color: var(--ink);
+    border-left: 1px solid var(--border);
+  }
+
+  .pivot-table tr:hover td { background: #f7f5f0; }
+  .pivot-table tr:last-child td { border-bottom: none; }
+
+  .heatcell {
+    border-radius: 3px;
+    padding: 2px 6px;
+    display: inline-block;
+  }
+
+  /* ── Month badge ── */
+  .month-tag {
+    display: inline-block;
+    padding: 0.2rem 0.55rem;
+    border-radius: 2px;
+    background: var(--ink);
+    color: #fff;
+    font-family: 'DM Mono', monospace;
+    font-size: 0.68rem;
+    letter-spacing: 0.05em;
+    text-transform: capitalize;
+  }
+
+  /* ── Filter section ── */
+  .filter-notice {
+    display: flex; align-items: center; gap: 0.75rem;
+    padding: 0.9rem 1.2rem;
+    background: #fdf0e8;
+    border-left: 3px solid var(--orange);
+    border-radius: 0 4px 4px 0;
+    margin-bottom: 1.5rem;
+    font-size: 0.82rem;
+    color: var(--orange);
+    font-weight: 500;
+  }
+
+  /* ── Footer ── */
+  footer {
+    grid-column: 1/-1;
+    background: var(--card);
+    border-top: 1px solid var(--border);
+    padding: 1.5rem 2.5rem;
+    display: flex; align-items: center; justify-content: space-between;
+    flex-wrap: wrap; gap: 1rem;
+  }
+
+  footer p {
+    font-family: 'DM Mono', monospace;
+    font-size: 0.65rem;
+    color: var(--muted);
+    letter-spacing: 0.08em;
+  }
+
+  .dot { display: inline-block; width: 6px; height: 6px; border-radius: 50%; background: var(--accent); margin-right: 0.4rem; animation: pulse 2s infinite; }
+
+  /* ── Animations ── */
+  @keyframes fadeUp {
+    from { opacity: 0; transform: translateY(16px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+  @keyframes pulse {
+    0%, 100% { opacity: 1; }
+    50%       { opacity: 0.3; }
+  }
+
+  /* ── Responsive ── */
+  @media (max-width: 768px) {
+    header { padding: 2rem 1.5rem; }
+    .stats-bar { grid-template-columns: 1fr; }
+    .stat-card { border-right: none; border-bottom: 1px solid var(--border); }
+    main { grid-template-columns: 1fr; }
+    .panel { padding: 1.5rem; }
+    .bar-row { grid-template-columns: 5.5rem 1fr 4rem; }
+  }
+</style>
+</head>
+<body>
+
+<!-- ── HEADER ── -->
+<header>
+  <p class="header-eyebrow">&#9632; Informe de rendimiento</p>
+  <h1>Tabla de <em>Ventas</em><br>Enero 2024</h1>
+  <div class="header-meta">
+    <span><b>10</b> registros</span>
+    <span><b>4</b> productos</span>
+    <span><b>01/01/2024</b> → <b>10/01/2024</b></span>
+    <span>Fuente: <b>ventas.csv</b></span>
+  </div>
+</header>
+
+<!-- ── STATS BAR ── -->
+<div class="stats-bar">
+  <div class="stat-card">
+    <p class="stat-label">Promedio por venta</p>
+    <p class="stat-value"><span class="currency">€</span><span id="val-avg">—</span></p>
+    <span class="stat-badge badge-avg">AVERAGE(total)</span>
+  </div>
+  <div class="stat-card">
+    <p class="stat-label">Suma total ingresos</p>
+    <p class="stat-value"><span class="currency">€</span><span id="val-sum">—</span></p>
+    <span class="stat-badge badge-sum">SUM(total)</span>
+  </div>
+  <div class="stat-card">
+    <p class="stat-label">Máximo ingreso</p>
+    <p class="stat-value"><span class="currency">€</span><span id="val-max">—</span></p>
+    <span class="stat-badge badge-max">MAX(total)</span>
+  </div>
+</div>
+
+<!-- ── MAIN GRID ── -->
+<main>
+
+  <!-- Panel 1: Dataset completo -->
+  <div class="panel" style="animation-delay:0.1s">
+    <p class="panel-title">Dataset completo</p>
+    <table class="data-table" id="table-full">
+      <thead>
+        <tr>
+          <th>Fecha</th>
+          <th>Producto</th>
+          <th style="text-align:right">Precio</th>
+          <th style="text-align:right">Uds.</th>
+          <th style="text-align:right">Total</th>
+          <th style="text-align:right">Mes</th>
+        </tr>
+      </thead>
+      <tbody></tbody>
+    </table>
+  </div>
+
+  <!-- Panel 2: Filtro >100€ -->
+  <div class="panel" style="animation-delay:0.2s">
+    <p class="panel-title">Filtro — ingresos &gt; 100 €</p>
+    <div class="filter-notice">
+      &#9655; Mostrando solo registros con <strong>&nbsp;total &gt; 100 €</strong>
+    </div>
+    <table class="data-table" id="table-filter">
+      <thead>
+        <tr>
+          <th>Producto</th>
+          <th style="text-align:right">Total</th>
+          <th style="text-align:right">Estado</th>
+        </tr>
+      </thead>
+      <tbody></tbody>
+    </table>
+  </div>
+
+  <!-- Panel 3: Gráfico de barras -->
+  <div class="panel" style="animation-delay:0.3s">
+    <p class="panel-title">Ingresos por producto</p>
+    <div class="chart-wrap" id="chart-bars"></div>
+  </div>
+
+  <!-- Panel 4: Mes en texto -->
+  <div class="panel" style="animation-delay:0.35s">
+    <p class="panel-title">Mes extraído en texto</p>
+    <table class="data-table">
+      <thead>
+        <tr>
+          <th>Fecha</th>
+          <th>Producto</th>
+          <th style="text-align:right">Mes</th>
+        </tr>
+      </thead>
+      <tbody id="table-mes"></tbody>
+    </table>
+  </div>
+
+  <!-- Panel 5: Tabla dinámica -->
+  <div class="panel panel-full" style="animation-delay:0.4s">
+    <p class="panel-title">Tabla dinámica — ingresos por producto × mes</p>
+    <div style="overflow-x:auto">
+      <table class="pivot-table" id="pivot-table"></table>
+    </div>
+  </div>
+
+</main>
+
+<!-- ── FOOTER ── -->
+<footer>
+  <p><span class="dot"></span>Dashboard generado desde <b>ventas.csv</b> · Python / Google Colab</p>
+  <p>Solución ejercicio tabla ventas &nbsp;|&nbsp; 2024</p>
+</footer>
+
+<script>
+// ── DATA ──────────────────────────────────────────────────────────────────
+const RAW = [
+  { fecha:"2024-01-01", producto:"Camiseta",   precio:20, unidades:5 },
+  { fecha:"2024-01-02", producto:"Pantalón",   precio:30, unidades:2 },
+  { fecha:"2024-01-03", producto:"Camiseta",   precio:20, unidades:3 },
+  { fecha:"2024-01-04", producto:"Zapatillas", precio:50, unidades:1 },
+  { fecha:"2024-01-05", producto:"Pantalón",   precio:30, unidades:4 },
+  { fecha:"2024-01-06", producto:"Sudadera",   precio:35, unidades:2 },
+  { fecha:"2024-01-07", producto:"Zapatillas", precio:50, unidades:2 },
+  { fecha:"2024-01-08", producto:"Camiseta",   precio:20, unidades:6 },
+  { fecha:"2024-01-09", producto:"Pantalón",   precio:30, unidades:1 },
+  { fecha:"2024-01-10", producto:"Sudadera",   precio:35, unidades:3 },
+];
+
+const MESES_ES = ["enero","febrero","marzo","abril","mayo","junio",
+                  "julio","agosto","septiembre","octubre","noviembre","diciembre"];
+
+const BAR_COLORS = {
+  "Camiseta":   "#1a3a5c",
+  "Pantalón":   "#2a7a6f",
+  "Zapatillas": "#e07b39",
+  "Sudadera":   "#7a5c8a",
+};
+
+// ── Process ───────────────────────────────────────────────────────────────
+const data = RAW.map(r => {
+  const d = new Date(r.fecha);
+  return {
+    ...r,
+    total: r.precio * r.unidades,
+    mes: MESES_ES[d.getMonth()],
+    fechaFmt: d.toLocaleDateString("es-ES", {day:"2-digit",month:"2-digit",year:"numeric"}),
+  };
+});
+
+const fmt = n => n.toLocaleString("es-ES", {minimumFractionDigits:2, maximumFractionDigits:2});
+
+// ── Stats ─────────────────────────────────────────────────────────────────
+const totales = data.map(r => r.total);
+const avg = totales.reduce((a,b)=>a+b,0) / totales.length;
+const sum = totales.reduce((a,b)=>a+b,0);
+const max = Math.max(...totales);
+
+function animateNum(el, target) {
+  let start = null;
+  const duration = 1200;
+  function step(ts) {
+    if (!start) start = ts;
+    const p = Math.min((ts - start) / duration, 1);
+    const ease = 1 - Math.pow(1 - p, 4);
+    el.textContent = fmt(ease * target);
+    if (p < 1) requestAnimationFrame(step);
+  }
+  requestAnimationFrame(step);
+}
+
+setTimeout(() => {
+  animateNum(document.getElementById("val-avg"), avg);
+  animateNum(document.getElementById("val-sum"), sum);
+  animateNum(document.getElementById("val-max"), max);
+}, 300);
+
+// ── Full table ─────────────────────────────────────────────────────────────
+const tbody = document.querySelector("#table-full tbody");
+data.forEach(r => {
+  const tr = document.createElement("tr");
+  tr.innerHTML = `
+    <td class="num">${r.fechaFmt}</td>
+    <td>${r.producto}</td>
+    <td class="num">${fmt(r.precio)} €</td>
+    <td class="num">${r.unidades}</td>
+    <td class="highlight">${fmt(r.total)} €</td>
+    <td style="text-align:right"><span class="month-tag">${r.mes}</span></td>
+  `;
+  tbody.appendChild(tr);
+});
+
+// ── Filter table ──────────────────────────────────────────────────────────
+const tbody2 = document.querySelector("#table-filter tbody");
+data.forEach(r => {
+  const over = r.total > 100;
+  const tr = document.createElement("tr");
+  tr.innerHTML = `
+    <td>${r.producto}</td>
+    <td class="highlight">${fmt(r.total)} €</td>
+    <td style="text-align:right">
+      <span class="pill ${over ? 'pill-over' : 'pill-under'}">${over ? '✓ > 100 €' : '✗ ≤ 100 €'}</span>
+    </td>
+  `;
+  tbody2.appendChild(tr);
+});
+
+// ── Mes table ─────────────────────────────────────────────────────────────
+const tmes = document.getElementById("table-mes");
+data.forEach(r => {
+  const tr = document.createElement("tr");
+  tr.innerHTML = `
+    <td class="num">${r.fechaFmt}</td>
+    <td>${r.producto}</td>
+    <td style="text-align:right"><span class="month-tag">${r.mes}</span></td>
+  `;
+  tmes.appendChild(tr);
+});
+
+// ── Bar chart ─────────────────────────────────────────────────────────────
+const byProduct = {};
+data.forEach(r => {
+  byProduct[r.producto] = (byProduct[r.producto] || 0) + r.total;
+});
+const maxBar = Math.max(...Object.values(byProduct));
+const chartWrap = document.getElementById("chart-bars");
+
+Object.entries(byProduct)
+  .sort((a,b) => b[1]-a[1])
+  .forEach(([prod, val]) => {
+    const pct = (val / maxBar * 100).toFixed(1);
+    const color = BAR_COLORS[prod] || "#333";
+    const div = document.createElement("div");
+    div.className = "bar-row";
+    div.innerHTML = `
+      <span class="bar-label">${prod}</span>
+      <div class="bar-track">
+        <div class="bar-fill" data-pct="${pct}" style="background:${color}"></div>
+      </div>
+      <span class="bar-value">${fmt(val)} €</span>
+    `;
+    chartWrap.appendChild(div);
+  });
+
+// Animate bars
+setTimeout(() => {
+  document.querySelectorAll(".bar-fill").forEach(el => {
+    el.style.width = el.dataset.pct + "%";
+  });
+}, 200);
+
+// ── Pivot table ───────────────────────────────────────────────────────────
+const products = [...new Set(data.map(r => r.producto))].sort();
+const months   = [...new Set(data.map(r => r.mes))];
+
+const pivot = {};
+products.forEach(p => {
+  pivot[p] = {};
+  months.forEach(m => pivot[p][m] = 0);
+});
+data.forEach(r => { pivot[r.producto][r.mes] += r.total; });
+
+const ptable = document.getElementById("pivot-table");
+// header
+const thead = document.createElement("thead");
+const htr = document.createElement("tr");
+htr.innerHTML = `<th>Producto</th>` +
+  months.map(m => `<th>${m.charAt(0).toUpperCase()+m.slice(1)}</th>`).join("") +
+  `<th>TOTAL</th>`;
+thead.appendChild(htr);
+ptable.appendChild(thead);
+
+// body
+const ptbody = document.createElement("tbody");
+products.forEach(prod => {
+  const rowTotal = months.reduce((s,m) => s + pivot[prod][m], 0);
+  const maxVal = Math.max(...months.map(m => pivot[prod][m]));
+  const tr = document.createElement("tr");
+  const cells = months.map(m => {
+    const v = pivot[prod][m];
+    const intensity = maxVal > 0 ? Math.round((v/maxVal)*100) : 0;
+    const bg = v > 0 ? `rgba(42,122,111,${0.08 + intensity/100 * 0.3})` : "transparent";
+    return `<td><span class="heatcell" style="background:${bg}">${v > 0 ? fmt(v)+" €" : "—"}</span></td>`;
+  }).join("");
+  tr.innerHTML = `<td>${prod}</td>${cells}<td class="total-col">${fmt(rowTotal)} €</td>`;
+  ptbody.appendChild(tr);
+});
+
+// Grand total row
+const gtr = document.createElement("tr");
+gtr.style.cssText = "background:#f7f5f0;font-weight:600";
+const grandTotal = products.reduce((s,p) => s + months.reduce((ss,m) => ss + pivot[p][m],0), 0);
+const monthTotals = months.map(m =>
+  `<td class="num" style="font-weight:600;color:var(--ink)">${fmt(products.reduce((s,p)=>s+pivot[p][m],0))} €</td>`
+).join("");
+gtr.innerHTML = `<td style="font-family:'DM Mono',monospace;font-size:0.65rem;letter-spacing:0.12em;text-transform:uppercase;color:var(--muted)">TOTAL GENERAL</td>
+  ${monthTotals}
+  <td class="total-col" style="color:var(--accent)">${fmt(grandTotal)} €</td>`;
+ptbody.appendChild(gtr);
+ptable.appendChild(ptbody);
+</script>
+</body>
+</html>
